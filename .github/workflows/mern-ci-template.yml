@@ -1,0 +1,69 @@
+name: Reusable MERN Stack CI Template
+
+on:
+  workflow_call:
+    inputs:
+      project-type:
+        required: true
+        type: string # 'backend', 'react', or 'nextjs'
+      node-version:
+        required: false
+        type: string
+        default: '24.x'
+
+jobs:
+  build-and-test:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ inputs.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+
+      - name: Clean Deterministic Install
+        run: npm ci
+
+      - name: Security & Code Quality Audits
+        run: |
+          npm audit --audit-level=high || true
+          npm run lint --if-present
+          npm run test --if-present
+
+      - name: Compile Application
+        run: npm run build --if-present
+
+      - name: Package Backend Artifact
+        if: ${{ inputs.project-type == 'backend' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-artifact
+          path: |
+            dist/
+            package.json
+            package-lock.json
+            ecosystem.config.js
+          retention-days: 3
+
+      - name: Package Next.js Standalone Artifact
+        if: ${{ inputs.project-type == 'nextjs' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-artifact
+          path: |
+            .next/standalone/
+            .next/static/
+            public/
+            ecosystem.config.js
+          retention-days: 3
+
+      - name: Package React SPA Artifact
+        if: ${{ inputs.project-type == 'react' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-artifact
+          path: build/
+          retention-days: 3
