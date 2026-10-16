@@ -53,6 +53,7 @@ jobs:
             !.env
             !tests/
             !coverage/
+          include-hidden-files: true
           retention-days: 3
 
       # -------------------------------------------------------------
