@@ -33,21 +33,32 @@ jobs:
           npm run lint --if-present
           npm run test --if-present
 
-      - name: Compile Application
+      - name: Compile Application (Frontend / TypeScript)
         run: npm run build --if-present
 
+      # -------------------------------------------------------------
+      # 1. BACKEND ARTIFACT (Plain JS / TS Express API)
+      # Packages source code while ignoring heavy/unnecessary folders
+      # -------------------------------------------------------------
       - name: Package Backend Artifact
         if: ${{ inputs.project-type == 'backend' }}
         uses: actions/upload-artifact@v4
         with:
           name: backend-artifact
           path: |
-            dist/
-            package.json
-            package-lock.json
-            ecosystem.config.js
+            ./
+            !node_modules/
+            !.git/
+            !.github/
+            !.env
+            !tests/
+            !coverage/
           retention-days: 3
 
+      # -------------------------------------------------------------
+      # 2. NEXT.JS STANDALONE ARTIFACT
+      # Packages standalone server, static assets, public folder, and PM2 config
+      # -------------------------------------------------------------
       - name: Package Next.js Standalone Artifact
         if: ${{ inputs.project-type == 'nextjs' }}
         uses: actions/upload-artifact@v4
@@ -58,12 +69,20 @@ jobs:
             .next/static/
             public/
             ecosystem.config.js
+            package.json
           retention-days: 3
 
+      # -------------------------------------------------------------
+      # 3. REACT SPA ARTIFACT
+      # Packages compiled static build folder (e.g., build/ or dist/)
+      # -------------------------------------------------------------
       - name: Package React SPA Artifact
         if: ${{ inputs.project-type == 'react' }}
         uses: actions/upload-artifact@v4
         with:
           name: react-artifact
-          path: build/
+          path: |
+            build/
+            # Fallback if Vite is used instead of Create React App:
+            # dist/ 
           retention-days: 3
